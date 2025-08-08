@@ -59,7 +59,7 @@ models/
 .data/
 ```
 
-## Why this is a great resume project
+
 - End-to-end: data ingestion → warehouse → ML → API/UI
 - Real, dynamic data and time-series trends
 - Clear design choices, typed, tested, CI-ready
