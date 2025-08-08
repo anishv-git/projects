@@ -9,7 +9,7 @@ PYTEST?=$(VENV)/bin/pytest
 
 setup:
 	python3 -m venv $(VENV)
-	. $(VENV)/bin/activate; $(PIP) install -r requirements.txt
+	. $(VENV)/bin/activate; $(PIP) install -r requirements.txt && $(PIP) install -e .
 
 ingest:
 	$(PY) -m scripts.ingest

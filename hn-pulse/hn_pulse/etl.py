@@ -6,19 +6,19 @@ def build_analytics() -> None:
     with duckdb_connection() as con:
         con.execute(
             """
-            CREATE TABLE IF NOT EXISTS stories AS
+            CREATE OR REPLACE TABLE stories AS
             SELECT
                 id,
                 by,
                 time,
                 to_timestamp(time) AS ts,
-                date_trunc(day, to_timestamp(time)) AS day,
+                date_trunc('day', to_timestamp(time)) AS day,
                 title,
                 url,
                 score,
                 descendants
             FROM raw_items
-            WHERE type = story;
+            WHERE type = 'story';
             """
         )
         con.execute(
