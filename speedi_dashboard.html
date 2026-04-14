@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Speedi — Demand Sensing Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #0a0a0a;
+    --yellow: #FFD600;
+    --yellow-dim: #e6c000;
+    --card: #141414;
+    --card2: #1c1c1c;
+    --border: #2a2a2a;
+    --text: #f0f0f0;
+    --muted: #888;
+    --faint: #444;
+    --red: #ff4444;
+    --green: #3ddc84;
+    --blue: #4fa3e0;
+    --orange: #f5a623;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    padding: 28px;
+  }
+
+  /* ── TOP BAR ─────────────────────────────── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: var(--yellow);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: var(--black);
+  }
+  .logo-text { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -.3px; }
+  .logo-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+  .live-badge {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--green);
+    background: rgba(61,220,132,.1);
+    border: 1px solid rgba(61,220,132,.2);
+    border-radius: 99px; padding: 4px 12px;
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* ── CONTROLS ROW ────────────────────────── */
+  .controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    align-items: center;
+  }
+  .ctrl-label { font-size: 12px; color: var(--muted); margin-right: 2px; }
+
+  select {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color .2s;
+  }
+  select:hover { border-color: var(--yellow); }
+
+  .sig-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .sig-btn:hover { border-color: var(--yellow); color: var(--text); }
+  .sig-btn.game-on { background: rgba(255,68,68,.12); border-color: var(--red); color: var(--red); }
+  .sig-btn.mkt-on  { background: rgba(245,166,35,.12); border-color: var(--orange); color: var(--orange); }
+
+  /* ── STAT CARDS ──────────────────────────── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+  .stat-card:hover { border-color: var(--faint); }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent, var(--yellow));
+    border-radius: 14px 14px 0 0;
+  }
+  .stat-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+  .stat-val { font-size: 32px; font-weight: 700; color: var(--text); line-height: 1; }
+  .stat-val span { font-size: 16px; font-weight: 400; color: var(--muted); }
+  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .stat-alert { font-size: 11px; font-weight: 600; margin-top: 6px; padding: 2px 8px; border-radius: 99px; display: inline-block; }
+
+  /* ── MAIN GRID ───────────────────────────── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: minmax(0,1.4fr) minmax(0,1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .panel-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    margin-bottom: 18px;
+  }
+
+  /* Bar chart */
+  .bar-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px;
+  }
+  .bar-row:last-child { margin-bottom: 0; }
+  .bar-lbl { font-size: 12px; color: var(--muted); width: 96px; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 5px; transition: width .5s cubic-bezier(.4,0,.2,1); }
+  .bar-count { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text); width: 28px; text-align: right; flex-shrink: 0; }
+
+  /* Signals list */
+  .signal-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .signal-item:last-child { border-bottom: none; }
+  .sig-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .sig-name { font-size: 13px; color: var(--text); flex: 1; }
+  .sig-val { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); }
+
+  /* ── STAFFING TABLE ──────────────────────── */
+  .staffing-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .shift-row {
+    display: flex; align-items: center;
+    padding: 12px 14px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    border: 1px solid transparent;
+    transition: all .2s;
+  }
+  .shift-row:last-child { margin-bottom: 0; }
+  .shift-row.active {
+    background: var(--card2);
+    border-color: var(--yellow);
+  }
+  .shift-time { font-size: 14px; font-weight: 600; color: var(--text); width: 130px; flex-shrink: 0; }
+  .shift-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .shift-middle { flex: 1; }
+  .shift-tag { font-size: 11px; color: var(--muted); }
+  .driver-pips { display: flex; gap: 6px; }
+  .pip {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    transition: all .3s;
+  }
+  .pip.on  { background: var(--yellow); color: var(--black); }
+  .pip.off { background: var(--border); color: var(--faint); }
+  .pip.standby { background: rgba(245,166,35,.2); color: var(--orange); border: 1px dashed var(--orange); }
+
+  .util-bar { margin-top: 4px; display: flex; align-items: center; gap: 8px; }
+  .util-track { width: 80px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .util-fill { height: 100%; border-radius: 2px; transition: width .5s; }
+  .util-pct { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+
+  /* ── ALERT BANNER ────────────────────────── */
+  .alert-banner {
+    display: none;
+    background: rgba(255,68,68,.08);
+    border: 1px solid rgba(255,68,68,.3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--red);
+    font-weight: 500;
+  }
+  .alert-banner.warn { background: rgba(245,166,35,.08); border-color: rgba(245,166,35,.3); color: var(--orange); }
+
+  /* ── FOOTER ──────────────────────────────── */
+  .footer {
+    margin-top: 20px;
+    font-size: 11px;
+    color: var(--faint);
+    text-align: center;
+    letter-spacing: .04em;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-mark">S</div>
+    <div>
+      <div class="logo-text">Speedi</div>
+      <div class="logo-sub">Demand Sensing Dashboard</div>
+    </div>
+  </div>
+  <div class="live-badge"><div class="live-dot"></div> Live forecast</div>
+</div>
+
+<div id="alert-banner" class="alert-banner"></div>
+
+<div class="controls">
+  <span class="ctrl-label">Day</span>
+  <select id="day-sel" onchange="update()">
+    <option value="0">Monday</option>
+    <option value="1">Tuesday</option>
+    <option value="2">Wednesday</option>
+    <option value="3">Thursday</option>
+    <option value="4" selected>Friday</option>
+    <option value="5">Saturday</option>
+    <option value="6">Sunday</option>
+  </select>
+  <span class="ctrl-label" style="margin-left:8px">Window</span>
+  <select id="time-sel" onchange="update()">
+    <option value="0">5 – 9 PM</option>
+    <option value="1" selected>9 PM – 12 AM</option>
+    <option value="2">12 – 2 AM</option>
+  </select>
+  <button class="sig-btn" id="game-btn" onclick="toggleSig('game')">+ UNC game day</button>
+  <button class="sig-btn" id="mkt-btn" onclick="toggleSig('mkt')">+ Marketing post</button>
+</div>
+
+<div class="stats">
+  <div class="stat-card" style="--accent:var(--yellow)">
+    <div class="stat-lbl">Predicted orders</div>
+    <div class="stat-val" id="s-orders">—</div>
+    <div class="stat-sub" id="s-orders-sub"></div>
+  </div>
+  <div class="stat-card" style="--accent:var(--blue)">
+    <div class="stat-lbl">Recommended drivers</div>
+    <div class="stat-val" id="s-drivers">—</div>
+    <div class="stat-sub" id="s-drivers-sub"></div>
+  </div>
+  <div class="stat-card" style="--accent:var(--green)">
+    <div class="stat-lbl">Est. utilization</div>
+    <div class="stat-val" id="s-util">—<span>%</span></div>
+    <div id="s-util-alert" class="stat-alert" style="display:none"></div>
+  </div>
+  <div class="stat-card" style="--accent:var(--orange)">
+    <div class="stat-lbl">Demand level</div>
+    <div class="stat-val" id="s-level" style="font-size:24px">—</div>
+    <div class="stat-sub" id="s-level-sub"></div>
+  </div>
+</div>
+
+<div class="main-grid">
+  <div class="panel">
+    <div class="panel-title">Demand signal breakdown</div>
+    <div id="bars"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">Active signals</div>
+    <div id="signals"></div>
+  </div>
+</div>
+
+<div class="staffing-panel">
+  <div class="panel-title">Full-day staffing recommendation</div>
+  <div id="recs"></div>
+</div>
+
+<div class="footer">BUSI 403 · S&amp;OP Application · Speedi Delivery · Demand Sensing Dashboard</div>
+
+<script>
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const TIMES = ['5–9 PM','9 PM–12 AM','12–2 AM'];
+let gameOn = false, mktOn = false;
+
+// base orders per [day][time]
+const BASE = [
+  [10,14,5],[11,16,6],[10,15,5],[16,24,9],[20,32,11],[36,52,17],[28,44,14]
+];
+const GAME = 22, MKT = 14;
+
+function calc(day, time) {
+  const b = BASE[day][time];
+  const winter = Math.round(b * 0.13);
+  const game = gameOn ? GAME : 0;
+  const mkt = mktOn ? MKT : 0;
+  const total = b + winter + game + mkt;
+  return { b, winter, game, mkt, total };
+}
+
+function driverRec(total) {
+  if (total < 18) return { n: 1, util: 70, tag: 'Standard', standby: false };
+  if (total < 28) return { n: 2, util: 76, tag: 'Normal peak', standby: false };
+  if (total < 40) return { n: 2, util: 90, tag: 'Near capacity', standby: false };
+  if (total < 54) return { n: 3, util: 83, tag: 'Surge — add driver', standby: false };
+  return { n: 3, util: 96, tag: 'Peak — manager standby', standby: true };
+}
+
+function levelInfo(total) {
+  if (total < 18) return { label: 'Low', color: 'var(--green)' };
+  if (total < 30) return { label: 'Moderate', color: 'var(--yellow)' };
+  if (total < 46) return { label: 'High', color: 'var(--orange)' };
+  return { label: 'Peak', color: 'var(--red)' };
+}
+
+function utilColor(u) {
+  if (u < 80) return 'var(--green)';
+  if (u < 92) return 'var(--orange)';
+  return 'var(--red)';
+}
+
+function toggleSig(s) {
+  if (s === 'game') {
+    gameOn = !gameOn;
+    document.getElementById('game-btn').className = 'sig-btn' + (gameOn ? ' game-on' : '');
+    document.getElementById('game-btn').textContent = (gameOn ? '✓ ' : '+ ') + 'UNC game day';
+  } else {
+    mktOn = !mktOn;
+    document.getElementById('mkt-btn').className = 'sig-btn' + (mktOn ? ' mkt-on' : '');
+    document.getElementById('mkt-btn').textContent = (mktOn ? '✓ ' : '+ ') + 'Marketing post';
+  }
+  update();
+}
+
+function update() {
+  const day = +document.getElementById('day-sel').value;
+  const time = +document.getElementById('time-sel').value;
+  const sig = calc(day, time);
+  const rec = driverRec(sig.total);
+  const lv  = levelInfo(sig.total);
+
+  // alert banner
+  const banner = document.getElementById('alert-banner');
+  if (rec.util >= 96) {
+    banner.style.display = 'block';
+    banner.className = 'alert-banner';
+    banner.textContent = '⚠ Near-capacity alert — utilization ' + rec.util + '%. Consider adding manager to standby.';
+  } else if (rec.util >= 88) {
+    banner.style.display = 'block';
+    banner.className = 'alert-banner warn';
+    banner.textContent = '↑ Elevated demand detected — utilization projected at ' + rec.util + '%. Pre-schedule an extra driver.';
+  } else {
+    banner.style.display = 'none';
+  }
+
+  // stats
+  document.getElementById('s-orders').textContent = sig.total;
+  document.getElementById('s-orders-sub').textContent = 'est. this window · ' + DAYS[day];
+  document.getElementById('s-drivers').textContent = rec.n;
+  document.getElementById('s-drivers-sub').textContent = rec.tag;
+  document.getElementById('s-util').innerHTML = rec.util + '<span>%</span>';
+  const ua = document.getElementById('s-util-alert');
+  if (rec.util >= 90) { ua.style.display='inline-block'; ua.style.background='rgba(255,68,68,.15)'; ua.style.color='var(--red)'; ua.textContent='Near limit'; }
+  else if (rec.util >= 80) { ua.style.display='inline-block'; ua.style.background='rgba(245,166,35,.15)'; ua.style.color='var(--orange)'; ua.textContent='Monitor'; }
+  else { ua.style.display='none'; }
+  document.getElementById('s-level').textContent = lv.label;
+  document.getElementById('s-level').style.color = lv.color;
+  document.getElementById('s-level-sub').textContent = 'demand forecast';
+
+  // bars
+  const barData = [
+    { label: 'Base demand',  val: sig.b,      color: 'var(--blue)' },
+    { label: 'Seasonality',  val: sig.winter, color: 'var(--green)' },
+    { label: 'Game day',     val: sig.game,   color: 'var(--red)' },
+    { label: 'Marketing',    val: sig.mkt,    color: 'var(--orange)' },
+  ];
+  document.getElementById('bars').innerHTML = barData.map(b => `
+    <div class="bar-row">
+      <div class="bar-lbl">${b.label}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(b.val/sig.total*100)}%;background:${b.color}"></div></div>
+      <div class="bar-count">${b.val}</div>
+    </div>`).join('');
+
+  // signals
+  const sigList = [
+    { name: 'Day of week',     val: DAYS[day],                  active: true,    color: 'var(--blue)' },
+    { name: 'Time window',     val: TIMES[time],                active: true,    color: 'var(--blue)' },
+    { name: 'Winter boost',    val: '+' + sig.winter + ' orders', active: true,  color: 'var(--green)' },
+    { name: 'UNC game day',    val: gameOn ? '+' + GAME + ' orders' : 'off', active: gameOn, color: 'var(--red)' },
+    { name: 'Marketing post',  val: mktOn  ? '+' + MKT  + ' orders' : 'off', active: mktOn,  color: 'var(--orange)' },
+  ];
+  document.getElementById('signals').innerHTML = sigList.map(s => `
+    <div class="signal-item">
+      <div class="sig-dot" style="background:${s.active ? s.color : 'var(--faint)'}"></div>
+      <div class="sig-name" style="color:${s.active ? 'var(--text)' : 'var(--faint)'}">${s.name}</div>
+      <div class="sig-val">${s.val}</div>
+    </div>`).join('');
+
+  // staffing recs for all 3 windows
+  const shifts = TIMES.map((t, i) => {
+    const sc = calc(day, i);
+    const dr = driverRec(sc.total);
+    return { time: t, ...dr, orders: sc.total };
+  });
+
+  document.getElementById('recs').innerHTML = shifts.map((sh, i) => {
+    const isActive = i === time;
+    const pips = [0,1,2].map(j => {
+      if (j < sh.n) return `<div class="pip on">D${j+1}</div>`;
+      if (j === sh.n && sh.standby) return `<div class="pip standby">M</div>`;
+      return `<div class="pip off">D${j+1}</div>`;
+    }).join('');
+    const uc = utilColor(sh.util);
+    return `
+    <div class="shift-row${isActive ? ' active' : ''}">
+      <div>
+        <div class="shift-time">${sh.time}</div>
+        <div class="shift-sub">${sh.orders} orders est.</div>
+      </div>
+      <div class="shift-middle" style="padding: 0 20px">
+        <div class="shift-tag">${sh.tag}</div>
+        <div class="util-bar">
+          <div class="util-track"><div class="util-fill" style="width:${sh.util}%;background:${uc}"></div></div>
+          <div class="util-pct" style="color:${uc}">${sh.util}% util</div>
+        </div>
+      </div>
+      <div class="driver-pips">${pips}</div>
+    </div>`;
+  }).join('');
+}
+
+update();
+</script>
+</body>
+</html>
